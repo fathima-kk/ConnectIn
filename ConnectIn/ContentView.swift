@@ -8,14 +8,35 @@
 import SwiftUI
 
 struct ContentView: View {
+    /// Selection type for the root tab bar (not SwiftUI's `Tab` view type).
+    enum MainTab: Hashable {
+        case dashboard
+        case browse
+        case profile
+    }
+
+    @State private var selectedTab: MainTab = .dashboard
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        TabView(selection: $selectedTab) {
+            Tab("Home", systemImage: "house.fill", value: .dashboard) {
+                NavigationStack {
+                    DashboardView()
+                }
+            }
+
+            Tab("Browse", systemImage: "person.2.fill", value: .browse) {
+                BrowseMentorsView()
+            }
+
+            Tab("Profile", systemImage: "person.crop.circle.fill", value: .profile) {
+                NavigationStack {
+                    ProfileView()
+                }
+            }
         }
-        .padding()
+        .tint(AppTheme.Colors.accent)
+        .background(AppTheme.Colors.background)
     }
 }
 
