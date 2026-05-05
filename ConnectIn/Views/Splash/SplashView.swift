@@ -6,27 +6,43 @@
 import SwiftUI
 
 struct SplashView: View {
+    @State private var isPulsing = false
+
     var body: some View {
-        NavigationStack {
-            VStack(spacing: AppTheme.spacing) {
+        splashContent
+        .onAppear {
+            isPulsing = true
+        }
+    }
+
+    private var splashContent: some View {
+        ZStack {
+            LinearGradient(
+                colors: [Color(hex: "052259"), Color(hex: "0A3066")],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .ignoresSafeArea()
+
+            VStack(spacing: 12) {
+                Image(systemName: "person.2.fill")
+                    .font(.system(size: 72, weight: .bold))
+                    .foregroundStyle(.white)
+                    .scaleEffect(isPulsing ? 1.08 : 0.92)
+                    .animation(
+                        .easeInOut(duration: 1.2).repeatForever(autoreverses: true),
+                        value: isPulsing
+                    )
+
                 Text("ConnectIn")
-                    .connectInLargeTitle()
-                    .foregroundStyle(AppTheme.Colors.primary)
-                Text("Free mentorship for anyone building a career in tech—students, career switchers, and self-taught learners welcome.")
-                    .connectInBody()
-                    .foregroundStyle(AppTheme.Colors.textSecondary)
-                    .multilineTextAlignment(.center)
-                Spacer()
-                NavigationLink("Get started") {
-                    LoginView()
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(AppTheme.Colors.accent)
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.white)
+
+                Text("Find Your Guide")
+                    .font(.caption)
+                    .foregroundStyle(.cyan)
             }
-            .padding()
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(AppTheme.Colors.background)
-            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }
