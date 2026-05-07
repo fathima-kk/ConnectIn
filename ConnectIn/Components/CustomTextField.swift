@@ -17,7 +17,7 @@ struct CustomTextField: View {
 
     private var borderColor: Color {
         if errorMessage != nil { return AppTheme.Colors.error }
-        return isFocused ? AppTheme.Colors.secondary : Color(hex: "#D1D5DB")
+        return isFocused ? AppTheme.Colors.secondary : AppTheme.Colors.inputBorder
     }
 
     var body: some View {
@@ -72,7 +72,7 @@ struct CustomTextEditor: View {
 
     private var borderColor: Color {
         if errorMessage != nil { return AppTheme.Colors.error }
-        return isFocused ? AppTheme.Colors.secondary : Color(hex: "#D1D5DB")
+        return isFocused ? AppTheme.Colors.secondary : AppTheme.Colors.inputBorder
     }
 
     var body: some View {

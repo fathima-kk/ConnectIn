@@ -9,15 +9,27 @@ import SwiftUI
 
 enum AppTheme {
     enum Colors {
-        static let primary = Color(hex: "#052259")
-        static let secondary = Color(hex: "#0891B2")
-        static let accent = Color(hex: "#06B6D4")
-        static let background = Color(hex: "#F8FAFF")
-        static let cardBackground = Color(hex: "#FFFFFF")
-        static let textPrimary = Color(hex: "#1F2937")
-        static let textSecondary = Color(hex: "#6B7280")
+        // Brand purples (light → dark)
+        static let primary = Color(hex: "#3B0764")        // royal-purple-950 (deep)
+        static let secondary = Color(hex: "#7C3AED")      // violet-600 (vibrant)
+        static let accent = Color(hex: "#A855F7")         // purple-500 (highlight)
+
+        // Surfaces
+        static let background = Color(hex: "#FAF8FF")     // lavender-tinged white
+        static let cardBackground = Color(hex: "#FFFFFF") // pure white
+
+        // Text
+        static let textPrimary = Color(hex: "#1F1B2E")    // near-black plum
+        static let textSecondary = Color(hex: "#6B6485")  // muted purple-gray
+
+        // Status (kept distinct from brand for legibility)
         static let success = Color(hex: "#10B981")
         static let error = Color(hex: "#EF4444")
+
+        // Neutral purples for borders, dividers, and subtle surfaces.
+        static let divider = Color(hex: "#EAE5F5")
+        static let inputBorder = Color(hex: "#DCD2EE")
+        static let cardBorder = Color(hex: "#EFEAF7")
     }
 
     static let cornerRadius: CGFloat = 12

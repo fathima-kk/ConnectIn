@@ -92,14 +92,15 @@ struct ProfileHeader: View {
     }
 
     private var roleBadge: some View {
-        Text(role == .student ? "Student" : "Mentor")
+        let isMentee = role == .mentee
+        return Text(isMentee ? "Mentee" : "Mentor")
             .connectInCaption()
             .fontWeight(.semibold)
-            .foregroundStyle(role == .student ? AppTheme.Colors.primary : AppTheme.Colors.cardBackground)
+            .foregroundStyle(isMentee ? AppTheme.Colors.primary : AppTheme.Colors.cardBackground)
             .padding(.horizontal, 14)
             .padding(.vertical, 6)
             .background(
-                role == .student
+                isMentee
                     ? AppTheme.Colors.primary.opacity(0.12)
                     : AppTheme.Colors.secondary,
                 in: Capsule()
@@ -107,11 +108,11 @@ struct ProfileHeader: View {
     }
 }
 
-#Preview("Student") {
+#Preview("Mentee") {
     ProfileHeader(
         imageURL: nil,
         name: "Sofia Martinez",
-        role: .student,
+        role: .mentee,
         subtitle: "San Francisco State University",
         isEditable: true,
         onEditTap: {}

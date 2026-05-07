@@ -20,7 +20,7 @@ struct TagView: View {
         case .teal:
             return (AppTheme.Colors.cardBackground, AppTheme.Colors.secondary)
         case .gray:
-            return (AppTheme.Colors.textPrimary, Color(hex: "#E5E7EB"))
+            return (AppTheme.Colors.textPrimary, AppTheme.Colors.divider)
         case let .custom(fg, bg):
             return (fg, bg)
         }

@@ -1,32 +1,27 @@
 //
-//  ProfileCreationView.swift
+//  MentorBasicInfoView.swift
 //  ConnectIn
 //
-//  Step 1 of 3 — basic info collected from new users.
+//  Mentor onboarding — Step 1 of 3.
+//  Collects the mentor's professional background so students see who they're
+//  about to learn from at a glance.
 //
 
 import SwiftUI
 
-struct ProfileCreationView: View {
+struct MentorBasicInfoView: View {
     @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var profileVM: ProfileViewModel
 
-    let role: UserRole
-
-    @State private var showingFirstGenInfo: Bool = false
     @State private var showingPhotoOptions: Bool = false
     @State private var hasSeeded: Bool = false
 
-    init(role: UserRole = .mentee) {
-        self.role = role
-    }
-
-    /// Mentees come from many places — current students, recent grads,
-    /// career-switchers — so we only require name + a focus area. Affiliation
-    /// (school or company) is encouraged but optional.
+    /// Step is valid once we have a name, job title, and company. Years of
+    /// experience always has a default.
     private var isStepValid: Bool {
         !profileVM.fullName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-            !profileVM.major.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            !profileVM.jobTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
+            !profileVM.company.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     var body: some View {
@@ -34,35 +29,18 @@ struct ProfileCreationView: View {
             VStack(alignment: .leading, spacing: 24) {
                 StepProgressBar(currentStep: 1, totalSteps: 3)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Tell us about yourself")
-                        .connectInLargeTitle()
-                        .foregroundStyle(AppTheme.Colors.textPrimary)
-                    Text("This helps mentors get to know you at a glance — whether you're a student, recent grad, or career-changer.")
-                        .connectInBody()
-                        .foregroundStyle(AppTheme.Colors.textSecondary)
-                }
+                header
 
                 photoPicker
 
                 VStack(spacing: 16) {
-                    CustomTextField(
-                        label: "Full Name",
-                        placeholder: "Jane Doe",
-                        text: $profileVM.fullName,
-                        icon: "person.fill"
-                    )
-                    .textContentType(.name)
-                    .textInputAutocapitalization(.words)
-
-                    affiliationField
-                    focusField
-                    currentStudentToggle
-                    if profileVM.isCurrentStudent {
-                        graduationYearPicker
-                        firstGenToggle
-                    }
+                    fullNameField
+                    jobTitleField
+                    companyField
+                    yearsExperiencePicker
                 }
+
+                verificationNote
 
                 Spacer(minLength: 8)
 
@@ -77,9 +55,11 @@ struct ProfileCreationView: View {
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
+            // Run once: mark this user as a mentor and seed any data we
+            // already have from sign-up (name, email).
             guard !hasSeeded else { return }
             hasSeeded = true
-            profileVM.role = role
+            profileVM.role = .mentor
             profileVM.seed(from: appState.currentUser)
         }
         .confirmationDialog("Profile photo", isPresented: $showingPhotoOptions, titleVisibility: .visible) {
@@ -92,15 +72,23 @@ struct ProfileCreationView: View {
         } message: {
             Text("Photo upload coming soon.")
         }
-        .alert("First-generation student", isPresented: $showingFirstGenInfo) {
-            Button("Got it", role: .cancel) {}
-        } message: {
-            Text("First-gen means you're the first in your immediate family to attend college. We use this to help match you with mentors who've shared similar journeys.")
-        }
     }
 
     // MARK: - Sections
 
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Your professional story")
+                .connectInLargeTitle()
+                .foregroundStyle(AppTheme.Colors.textPrimary)
+            Text("Mentees will see this on your card before they reach out.")
+                .connectInBody()
+                .foregroundStyle(AppTheme.Colors.textSecondary)
+        }
+    }
+
+    /// Same look as the student photo picker so the two flows feel like one
+    /// product, just with mentor-appropriate copy.
     private var photoPicker: some View {
         Button {
             showingPhotoOptions = true
@@ -117,7 +105,7 @@ struct ProfileCreationView: View {
                         )
                         .frame(width: 110, height: 110)
 
-                    Image(systemName: "camera.fill")
+                    Image(systemName: "person.badge.shield.checkmark.fill")
                         .font(.system(size: 32, weight: .semibold))
                         .foregroundStyle(.white)
 
@@ -135,7 +123,7 @@ struct ProfileCreationView: View {
                         .offset(x: 38, y: 38)
                 }
 
-                Text("Add profile photo")
+                Text("Add a professional photo")
                     .connectInCaption()
                     .fontWeight(.semibold)
                     .foregroundStyle(AppTheme.Colors.accent)
@@ -145,73 +133,56 @@ struct ProfileCreationView: View {
         .buttonStyle(.plain)
     }
 
-    /// "Where you study or work" — works for current students, recent grads,
-    /// and people who already have a job but are exploring something new.
-    private var affiliationField: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            CustomTextField(
-                label: "School or Company (optional)",
-                placeholder: "e.g. SF State, or Stripe",
-                text: $profileVM.university,
-                icon: "building.2.fill"
-            )
-            .textInputAutocapitalization(.words)
-            .autocorrectionDisabled(true)
-
-            Text("Optional. Helps mentors find common ground.")
-                .connectInCaption()
-                .foregroundStyle(AppTheme.Colors.textSecondary)
-        }
+    private var fullNameField: some View {
+        CustomTextField(
+            label: "Full Name",
+            placeholder: "Jane Doe",
+            text: $profileVM.fullName,
+            icon: "person.fill"
+        )
+        .textContentType(.name)
+        .textInputAutocapitalization(.words)
     }
 
-    /// Field/focus area — major for students, role for working folks.
-    private var focusField: some View {
+    private var jobTitleField: some View {
         CustomTextField(
-            label: "Field or Focus",
-            placeholder: "e.g. Product Management, Computer Science",
-            text: $profileVM.major,
-            icon: "sparkles"
+            label: "Current Role",
+            placeholder: "e.g. Senior Product Manager",
+            text: $profileVM.jobTitle,
+            icon: "briefcase.fill"
         )
         .textInputAutocapitalization(.words)
     }
 
-    /// Hides graduation year + first-gen until the user explicitly says
-    /// they're a current student — keeps the form short for everyone else.
-    private var currentStudentToggle: some View {
-        Toggle(isOn: $profileVM.isCurrentStudent) {
-            Text("I'm currently a student")
-                .connectInBody()
-                .foregroundStyle(AppTheme.Colors.textPrimary)
-        }
-        .tint(AppTheme.Colors.accent)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(AppTheme.Colors.cardBackground, in: RoundedRectangle(cornerRadius: 12))
-        .overlay {
-            RoundedRectangle(cornerRadius: 12)
-                .strokeBorder(AppTheme.Colors.inputBorder, lineWidth: 1)
-        }
+    private var companyField: some View {
+        CustomTextField(
+            label: "Company",
+            placeholder: "e.g. Figma",
+            text: $profileVM.company,
+            icon: "building.2.fill"
+        )
+        .textInputAutocapitalization(.words)
     }
 
-    private var graduationYearPicker: some View {
+    private var yearsExperiencePicker: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Graduation Year")
+            Text("Years of Experience")
                 .connectInCaption()
                 .fontWeight(.medium)
                 .foregroundStyle(AppTheme.Colors.textPrimary)
 
             Menu {
-                Picker("Graduation Year", selection: $profileVM.graduationYear) {
-                    ForEach(Array(ProfileViewModel.graduationYearRange), id: \.self) { year in
-                        Text(String(year)).tag(year)
+                Picker("Years of Experience", selection: $profileVM.yearsExperience) {
+                    ForEach(Array(ProfileViewModel.yearsExperienceRange), id: \.self) { years in
+                        Text("\(years) year\(years == 1 ? "" : "s")").tag(years)
                     }
                 }
             } label: {
                 HStack(spacing: 10) {
-                    Image(systemName: "calendar")
+                    Image(systemName: "clock.fill")
                         .foregroundStyle(AppTheme.Colors.textSecondary)
                         .frame(width: 20)
-                    Text(String(profileVM.graduationYear))
+                    Text("\(profileVM.yearsExperience) year\(profileVM.yearsExperience == 1 ? "" : "s")")
                         .connectInBody()
                         .foregroundStyle(AppTheme.Colors.textPrimary)
                     Spacer()
@@ -229,38 +200,37 @@ struct ProfileCreationView: View {
         }
     }
 
-    private var firstGenToggle: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 12) {
-                Toggle(isOn: $profileVM.isFirstGen) {
-                    HStack(spacing: 6) {
-                        Text("First-generation student?")
-                            .connectInBody()
-                            .foregroundStyle(AppTheme.Colors.textPrimary)
-                        Button {
-                            showingFirstGenInfo = true
-                        } label: {
-                            Image(systemName: "info.circle")
-                                .foregroundStyle(AppTheme.Colors.textSecondary)
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .tint(AppTheme.Colors.accent)
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(AppTheme.Colors.cardBackground, in: RoundedRectangle(cornerRadius: 12))
-            .overlay {
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(AppTheme.Colors.inputBorder, lineWidth: 1)
+    /// We don't run real verification yet, but signaling the intent here is
+    /// important — it sets expectations for the badge mentors will see on
+    /// their card later.
+    private var verificationNote: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "checkmark.seal.fill")
+                .foregroundStyle(AppTheme.Colors.accent)
+                .padding(.top, 1)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Verified mentor badge")
+                    .connectInCaption()
+                    .fontWeight(.semibold)
+                    .foregroundStyle(AppTheme.Colors.textPrimary)
+                Text("We'll confirm your role and company over email before mentees see a verified badge on your profile.")
+                    .connectInCaption()
+                    .foregroundStyle(AppTheme.Colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AppTheme.Colors.accent.opacity(0.10), in: RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(AppTheme.Colors.accent.opacity(0.35), lineWidth: 1)
+        )
     }
 
     private var actionButtons: some View {
         VStack(spacing: 12) {
-            NavigationLink(value: OnboardingRoute.interests) {
+            NavigationLink(value: OnboardingRoute.mentorExpertise) {
                 Text("Continue")
                     .connectInHeadline()
                     .frame(maxWidth: .infinity)
@@ -295,8 +265,12 @@ struct ProfileCreationView: View {
 
 #Preview {
     NavigationStack {
-        ProfileCreationView(role: .mentee)
+        MentorBasicInfoView()
             .environmentObject(AppState())
-            .environmentObject(ProfileViewModel())
+            .environmentObject({
+                let vm = ProfileViewModel()
+                vm.role = .mentor
+                return vm
+            }())
     }
 }

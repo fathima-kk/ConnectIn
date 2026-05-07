@@ -17,4 +17,7 @@ struct Mentor: Identifiable, Codable, Hashable {
     var currentMentees: Int
     /// Display score from matching (mock data sets this explicitly).
     var matchPercentage: Int
+    /// Whether the mentor has had their employer + identity manually verified.
+    /// Surfaces as a "Verified" badge throughout the UI on the free tier.
+    var isVerified: Bool = false
 }

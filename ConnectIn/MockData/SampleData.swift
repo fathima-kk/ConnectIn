@@ -33,11 +33,11 @@ enum SampleData {
 
     // MARK: - Student
 
-    static let student = User(
+    static let mentee = User(
         id: ID.student,
         email: "smartinez1@mail.sfsu.edu",
         fullName: "Sofia Martinez",
-        role: .student,
+        role: .mentee,
         profileImageURL: nil,
         bio: """
         I'm 20, a first-generation junior at San Francisco State. I'm drawn to where \
@@ -63,8 +63,8 @@ enum SampleData {
         createdAt: baseDate
     )
 
-    /// Logged-in profile; same as `student` for mock apps.
-    static let currentUser = student
+    /// Default logged-in profile for the demo (mentee perspective).
+    static let currentUser = mentee
 
     // MARK: - Mentor user records (private)
 
@@ -202,7 +202,8 @@ enum SampleData {
             availability: "Tue & Thu evenings (PT), 30–45 min video",
             maxMentees: 3,
             currentMentees: 1,
-            matchPercentage: 92
+            matchPercentage: 92,
+            isVerified: true
         ),
         Mentor(
             id: ID.m2,
@@ -214,7 +215,8 @@ enum SampleData {
             availability: "Saturday mornings or Sunday late afternoon (ET)",
             maxMentees: 4,
             currentMentees: 2,
-            matchPercentage: 98
+            matchPercentage: 98,
+            isVerified: true
         ),
         Mentor(
             id: ID.m3,
@@ -226,7 +228,8 @@ enum SampleData {
             availability: "Weekday lunch 12–1 PT, or async feedback on portfolios",
             maxMentees: 5,
             currentMentees: 2,
-            matchPercentage: 84
+            matchPercentage: 84,
+            isVerified: false
         ),
         Mentor(
             id: ID.m4,
@@ -238,7 +241,8 @@ enum SampleData {
             availability: "Mon/Wed 6–8pm ET",
             maxMentees: 3,
             currentMentees: 0,
-            matchPercentage: 75
+            matchPercentage: 75,
+            isVerified: true
         ),
         Mentor(
             id: ID.m5,
@@ -250,7 +254,8 @@ enum SampleData {
             availability: "Friday evenings or Sunday mornings (PT)",
             maxMentees: 4,
             currentMentees: 3,
-            matchPercentage: 88
+            matchPercentage: 88,
+            isVerified: true
         ),
         Mentor(
             id: ID.m6,
@@ -262,7 +267,8 @@ enum SampleData {
             availability: "Biweekly Tue 5–7pm PT",
             maxMentees: 2,
             currentMentees: 1,
-            matchPercentage: 95
+            matchPercentage: 95,
+            isVerified: true
         ),
     ]
 
@@ -318,4 +324,142 @@ enum SampleData {
             ]
         ),
     ]
+
+    // MARK: - Seed sessions and milestones (Sofia ↔ Diego)
+
+    /// Stable session UUIDs so `Hashable`/`Equatable` lookups don't churn.
+    private enum SessionID {
+        static let s1 = UUID(uuidString: "50000000-0000-4000-8000-000000000001")!
+        static let s2 = UUID(uuidString: "50000000-0000-4000-8000-000000000002")!
+        static let s3 = UUID(uuidString: "50000000-0000-4000-8000-000000000003")!
+    }
+
+    private static func date(daysOffset: Int) -> Date {
+        Calendar.current.date(byAdding: .day, value: daysOffset, to: Date()) ?? Date()
+    }
+
+    static let seedSessions: [Session] = [
+        Session(
+            id: SessionID.s1,
+            mentorId: ID.m5,
+            templateId: SessionTemplate.library[0].id,
+            title: "First Meeting",
+            date: date(daysOffset: -10),
+            duration: 30,
+            status: .completed,
+            agenda: SessionTemplate.library[0].agenda,
+            goals: SessionTemplate.library[0].suggestedGoals,
+            notes: "Aligned on biweekly Friday check-ins. Picked PM-internship prep as our north star."
+        ),
+        Session(
+            id: SessionID.s2,
+            mentorId: ID.m5,
+            templateId: SessionTemplate.library[2].id,
+            title: "Resume Review",
+            date: date(daysOffset: -3),
+            duration: 30,
+            status: .completed,
+            agenda: SessionTemplate.library[2].agenda,
+            goals: SessionTemplate.library[2].suggestedGoals,
+            notes: "Reframed 5 bullets with metrics. Cut the high-school section."
+        ),
+        Session(
+            id: SessionID.s3,
+            mentorId: ID.m5,
+            templateId: SessionTemplate.library[4].id,
+            title: "Goal Check-In",
+            date: date(daysOffset: 4),
+            duration: 30,
+            status: .scheduled,
+            agenda: SessionTemplate.library[4].agenda,
+            goals: SessionTemplate.library[4].suggestedGoals
+        )
+    ]
+
+    static let seedMilestones: [Milestone] = [
+        Milestone(
+            title: "First mentor session",
+            detail: "Met Diego and aligned on a 30-day plan.",
+            category: .session,
+            achievedAt: date(daysOffset: -10)
+        ),
+        Milestone(
+            title: "Resume v2 shipped",
+            detail: "Rewrote top 5 bullets with quantified impact.",
+            category: .skill,
+            achievedAt: date(daysOffset: -3)
+        ),
+        Milestone(
+            title: "Sent 3 outreach messages",
+            detail: "Networking quota hit for the week.",
+            category: .goal,
+            achievedAt: date(daysOffset: -1)
+        )
+    ]
+
+    // MARK: - Mentee personas (for the mentor dashboard demo)
+
+    /// A short list of mock mentees who've reached out. We construct them as
+    /// `User` records (instead of full `Mentor`s) because mentees aren't
+    /// part of the discoverable mentor catalog.
+    static let demoMenteeRequests: [DemoMenteeRequest] = [
+        DemoMenteeRequest(
+            id: UUID(uuidString: "60000000-0000-4000-8000-000000000001")!,
+            name: "Jordan Lee",
+            affiliation: "UCLA · CS '27",
+            askLine: "Looking for help breaking into product at a B2B startup.",
+            sentDaysAgo: 1
+        ),
+        DemoMenteeRequest(
+            id: UUID(uuidString: "60000000-0000-4000-8000-000000000002")!,
+            name: "Priya Krishnan",
+            affiliation: "Career-switcher · Marketing → PM",
+            askLine: "Mid-career shift. Want feedback on my portfolio.",
+            sentDaysAgo: 3
+        )
+    ]
+
+    /// Currently active mentees the mentor is supporting. Showcases the
+    /// mentor's track record on their dashboard.
+    static let demoActiveMentees: [DemoActiveMentee] = [
+        DemoActiveMentee(
+            id: UUID(uuidString: "60000000-0000-4000-8000-000000000010")!,
+            name: "Sofia Martinez",
+            affiliation: "SF State · Junior",
+            connectedSinceDaysAgo: 38,
+            sessionsHeld: 4,
+            lastNote: "Aced her first PM coffee chat last week."
+        ),
+        DemoActiveMentee(
+            id: UUID(uuidString: "60000000-0000-4000-8000-000000000011")!,
+            name: "Maya Okonkwo",
+            affiliation: "Recent grad · Stanford",
+            connectedSinceDaysAgo: 12,
+            sessionsHeld: 2,
+            lastNote: "Resume revamped — applying this week."
+        )
+    ]
+}
+
+// MARK: - Demo data types
+
+/// Lightweight value type for an incoming connection request shown on the
+/// mentor dashboard. Keeps demo wiring small without polluting the real
+/// `Match` model.
+struct DemoMenteeRequest: Identifiable, Hashable {
+    let id: UUID
+    let name: String
+    let affiliation: String
+    let askLine: String
+    let sentDaysAgo: Int
+}
+
+/// Lightweight value type for an active mentee the mentor is supporting.
+struct DemoActiveMentee: Identifiable, Hashable {
+    let id: UUID
+    let name: String
+    let affiliation: String
+    let connectedSinceDaysAgo: Int
+    let sessionsHeld: Int
+    let lastNote: String
 }
