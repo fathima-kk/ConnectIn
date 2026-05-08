@@ -95,6 +95,7 @@ struct BrowseMentorsView: View {
                         .foregroundStyle(AppTheme.Colors.textSecondary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Clear search")
                 .transition(.scale.combined(with: .opacity))
             }
         }
@@ -134,6 +135,8 @@ struct BrowseMentorsView: View {
                         .overlay { Circle().strokeBorder(AppTheme.Colors.divider, lineWidth: 1) }
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Filters")
+                .accessibilityHint("Opens advanced filter options")
             }
             .padding(.horizontal, 16)
         }

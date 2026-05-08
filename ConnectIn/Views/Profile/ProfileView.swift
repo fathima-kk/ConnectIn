@@ -115,6 +115,8 @@ struct ProfileView: View {
                     Image(systemName: "square.and.pencil")
                         .foregroundStyle(AppTheme.Colors.accent)
                 }
+                .accessibilityLabel("Edit profile")
+                .accessibilityHint("Opens the profile editor")
             }
         }
         .sheet(isPresented: $showingEditSheet) {
@@ -971,6 +973,7 @@ struct ProfileEditSheet: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(newItem.wrappedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .accessibilityLabel("Add item")
             }
         }
     }

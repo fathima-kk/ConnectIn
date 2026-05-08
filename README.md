@@ -1,6 +1,92 @@
 # ConnectIn
 
-A SwiftUI app for connecting mentors and learners. This README is for **new contributors** who want to use Git and GitHub together as a team.
+A SwiftUI app that connects mentors with anyone seeking guidance — students, recent grads, and career-changers alike. Mentees subscribe for $4.99/month; mentors join for free, forever.
+
+---
+
+## Features
+
+ConnectIn is a two-sided marketplace with parallel, role-aware experiences. Below is the full feature catalog grouped by area. Anything marked _Pro_ is gated behind the mentee subscription — mentors get every feature without paying.
+
+### Authentication & onboarding
+
+- **Splash → Login → Signup** flow with form validation and a triple-tap escape hatch on the splash logo to enter **Demo Mode** (auto-seeds sample data + an active Pro trial).
+- **Role selection** screen with two side-by-side cards: **Mentee** (anyone looking for guidance) and **Mentor** (free, forever).
+- **Two parallel 3-step onboarding flows**:
+  - Mentee: basic info → interests → goals
+  - Mentor: basic info (role, company, years) → expertise → mentorship style (availability, capacity, why I mentor)
+- **Inclusive mentee onboarding**: school/company is optional, and graduation year + first-gen options only appear if the user marks themselves as a current student.
+- **Persistent session**: auth state, profile, connections, sessions, milestones, quiz result, and subscription all survive app restarts via `UserDefaults`.
+
+### Mentee experience
+
+- **Discovery dashboard** with greeting, subscription banner, your-mentor card, progress snapshot, quick stats, and suggested mentors ranked by match percentage.
+- **Browse Mentors** with mentor cards (photo, role, expertise tags, match %, _verified_ badge for credentialed mentors).
+- **Mentor detail view** with full bio, expertise, ways-they-help, availability boundaries, and stats.
+- **Connection request sheet** (_Pro_) with **pre-built message templates** so no one faces blank-page anxiety.
+- **Compatibility quiz** — 5-question questionnaire that updates a personalized match score and writes the result back into the matching pipeline.
+- **Subscription management** card with $4.99/mo plan, trial countdown, renewal info, and one-tap cancellation.
+- **Goal setting** during onboarding (broad options: land my first role, switch careers, build network, learn skills, work-life balance).
+
+### Mentor experience
+
+- **Mentor dashboard** (separate from the mentee dashboard) with:
+  - "Free forever for mentors" celebratory banner
+  - **Impact card**: active mentees, completed sessions, hours given, milestones celebrated
+  - **Mentee Requests** queue with Accept / Decline buttons + toast feedback
+  - **Active Mentees** list with last-note, sessions held, and time connected
+  - **Recent Wins** feed showing milestone unlocks
+- **Verified credential badge** displayed on the mentor's card and detail view once an admin confirms their role + company.
+- **Availability & boundary settings** captured during onboarding (preset chips like "Evenings only" + freeform), plus a max-mentees capacity to prevent burnout.
+- **Profile shows "Mentor account · Free"** instead of subscription card; matching quiz is hidden (mentors aren't being matched, they're matching others).
+
+### Sessions tab (4th tab)
+
+- **Structured session templates** library (resume review, mock interview, career roadmap, etc.) so meetings always have an agenda and suggested goals.
+- **Schedule a session** sheet — pick a template, mentor, date, and time.
+- **Session detail view** — see agenda + goals, mark complete (auto-creates a milestone), or cancel.
+- **Upcoming / past sessions** lists, sorted chronologically, with badge count on the tab bar.
+- **Progress dashboard card** at the top of the tab — completed sessions, total minutes mentored, milestones achieved.
+- **Milestone tracking** — wins are auto-recorded when sessions complete, plus a feed of all achievements (categorized: session, goal, application, skill).
+- **Membership pill** — mentors see a static green "Free" badge; mentees see a dynamic "Try Pro / Trial · Xd / Pro / Renew" pill that opens the paywall.
+
+### Profile
+
+- **Role-aware profile header** with photo, name, role badge (Mentee / Mentor), and contextual subtitle ("School · Field" for mentees, "Job Title · Company" for mentors).
+- **Profile completion banner** with percentage and a list of missing sections — adapts to role.
+- **Editable everywhere** — single edit sheet that conditionally renders mentee or mentor fields.
+- **Sections**: About, Details (role-specific), Interests / Expertise, Goals / Ways I help, Settings.
+- **Compatibility quiz card** (mentees only) to retake the quiz at any time.
+- **Membership card** (mentees) or "Mentor account · Free" card (mentors).
+- **Reset Demo** action wipes connections, sessions, and milestones back to seed data.
+
+### Subscription & paywall ($4.99/mo, mentees only)
+
+- **Free trial** with countdown to renewal.
+- **Paywall view** with feature highlights, plan comparison, and trial CTA.
+- **Gated actions** for non-subscribers: connecting with a mentor, scheduling a session, browsing templates beyond the shortlist.
+- **Mentors bypass all gates** via `AppState.hasPremiumAccess` (always `true` for `.mentor`).
+- **Subscription state** persists across launches with status (`none` / `trialing` / `active` / `expired`), start date, and renewal date.
+
+### Theme & design system
+
+- **Shades of purple + white** palette (deep royal-purple, vibrant violet, lavender-tinted whites).
+- **Reusable components**: `CustomTextField`, `PrimaryButton`, `MentorCard`, `ProfileHeader`, `TagView`, `StepProgressBar`, `Toast`, `InterestChip`, `ExpertiseChip`, `GoalCard`, `RoleCard`, `MentorAvatarBubble`, `StatCard`, `ProfileSection`, and a custom `TagFlowLayout`.
+- **Consistent semantic tokens** for primary, secondary, accent, success, error, dividers, borders, and surfaces — defined in `Theme/AppTheme.swift`.
+- **Animations & haptics** — smooth transitions between phases and `sensoryFeedback` on key actions.
+
+### Architecture
+
+- **Centralized state**: `AppState` (auth + subscription + quiz + tab routing), `ConnectionsManager` (pending / accepted / declined), `SessionsManager` (sessions + milestones), `ProfileViewModel` (onboarding-time form state).
+- **Phase-based root routing** — a single `Phase` enum (`.loggedOut` / `.onboarding` / `.loggedIn`) is the source of truth for top-level navigation.
+- **Backwards-compatible role rename** — `UserRole.mentee` keeps `rawValue = "student"` so previously-saved profiles still decode.
+- **Demo Mode** — pre-populated mentor catalog, sample sessions, milestones, and an active Pro trial, gated behind a triple-tap on the splash logo.
+
+### Tech stack
+
+- **SwiftUI** + **Combine** (`@StateObject`, `@EnvironmentObject`, `@Published`, `NavigationStack`, `TabView`)
+- **Persistence**: `UserDefaults` with `JSONEncoder` / `JSONDecoder`
+- **iOS** target (built and tested against iPhone Simulator on iOS 26.4)
 
 ---
 

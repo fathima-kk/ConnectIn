@@ -4,107 +4,156 @@
 //
 
 import SwiftUI
+import UIKit
 
 // MARK: - Brand colors
+//
+// Colors adapt to the system color scheme so the app respects the user's
+// Light/Dark preference (Apple HIG: Color and Materials). Brand purples stay
+// vivid in both modes; surfaces, text, and borders fully invert.
 
 enum AppTheme {
     enum Colors {
-        // Brand purples (light → dark)
-        static let primary = Color(hex: "#3B0764")        // royal-purple-950 (deep)
-        static let secondary = Color(hex: "#7C3AED")      // violet-600 (vibrant)
-        static let accent = Color(hex: "#A855F7")         // purple-500 (highlight)
+        // Brand purples — slightly brighter variants in dark mode so the
+        // gradient banners pop against a near-black surface without losing
+        // their identity.
+        static let primary = adaptive(
+            light: "#3B0764",   // royal-purple-950
+            dark: "#5B21B6"     // violet-800
+        )
+        static let secondary = adaptive(
+            light: "#7C3AED",   // violet-600
+            dark: "#A78BFA"     // violet-400
+        )
+        static let accent = adaptive(
+            light: "#A855F7",   // purple-500
+            dark: "#C084FC"     // purple-400
+        )
 
         // Surfaces
-        static let background = Color(hex: "#FAF8FF")     // lavender-tinged white
-        static let cardBackground = Color(hex: "#FFFFFF") // pure white
+        static let background = adaptive(
+            light: "#FAF8FF",   // lavender-tinted white
+            dark: "#0F0A1A"     // near-black plum
+        )
+        static let cardBackground = adaptive(
+            light: "#FFFFFF",
+            dark: "#1A1428"     // dark plum
+        )
 
         // Text
-        static let textPrimary = Color(hex: "#1F1B2E")    // near-black plum
-        static let textSecondary = Color(hex: "#6B6485")  // muted purple-gray
+        static let textPrimary = adaptive(
+            light: "#1F1B2E",   // near-black plum
+            dark: "#F5F3FF"     // lavender white
+        )
+        static let textSecondary = adaptive(
+            light: "#6B6485",   // muted purple-gray
+            dark: "#9D94B8"     // muted lavender-gray
+        )
 
-        // Status (kept distinct from brand for legibility)
-        static let success = Color(hex: "#10B981")
-        static let error = Color(hex: "#EF4444")
+        // Status (kept distinct from brand for legibility, matched to system
+        // semantic green/red so they remain unambiguous in both modes).
+        static let success = adaptive(light: "#10B981", dark: "#34D399")
+        static let error = adaptive(light: "#EF4444", dark: "#F87171")
 
-        // Neutral purples for borders, dividers, and subtle surfaces.
-        static let divider = Color(hex: "#EAE5F5")
-        static let inputBorder = Color(hex: "#DCD2EE")
-        static let cardBorder = Color(hex: "#EFEAF7")
+        // Neutrals — borders, dividers, subtle surfaces.
+        static let divider = adaptive(light: "#EAE5F5", dark: "#2A1E40")
+        static let inputBorder = adaptive(light: "#DCD2EE", dark: "#3A2B58")
+        static let cardBorder = adaptive(light: "#EFEAF7", dark: "#2A1E40")
     }
 
+    /// Default rounded-rectangle radius for buttons, cards, and chips.
     static let cornerRadius: CGFloat = 12
+
+    /// Standard 16-pt grid spacing — matches Apple HIG layout margin.
     static let spacing: CGFloat = 16
 }
 
-// MARK: - Hex colors
+// MARK: - Adaptive color helpers
 
-extension Color {
-    /// Parses `#RRGGBB` or `#RRGGBBAA` (alpha last).
-    init(hex: String) {
-        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
-        var value: UInt64 = 0
-        Scanner(string: hex).scanHexInt64(&value)
-
-        let r, g, b, a: Double
-        switch hex.count {
-        case 6:
-            a = 1
-            r = Double((value >> 16) & 0xFF) / 255
-            g = Double((value >> 8) & 0xFF) / 255
-            b = Double(value & 0xFF) / 255
-        case 8:
-            a = Double((value >> 24) & 0xFF) / 255
-            r = Double((value >> 16) & 0xFF) / 255
-            g = Double((value >> 8) & 0xFF) / 255
-            b = Double(value & 0xFF) / 255
-        default:
-            a = 1
-            r = 0
-            g = 0
-            b = 0
-        }
-
-        self.init(.sRGB, red: r, green: g, blue: b, opacity: a)
+private extension AppTheme {
+    /// Returns a `Color` that resolves to `light` in light mode and `dark`
+    /// in dark mode, using a `UIColor` dynamic provider under the hood.
+    /// Centralizing this keeps every theme color one-line and consistent.
+    static func adaptive(light: String, dark: String) -> Color {
+        Color(uiColor: UIColor { traits in
+            traits.userInterfaceStyle == .dark
+                ? UIColor(hex: dark)
+                : UIColor(hex: light)
+        })
     }
 }
 
-// MARK: - Typography (SF Pro is the system default on iOS)
+// MARK: - Hex parsing
 
-private enum FontSize {
-    static let largeTitle: CGFloat = 34
-    static let title: CGFloat = 28
-    static let headline: CGFloat = 17
-    static let body: CGFloat = 17
-    static let caption: CGFloat = 12
+extension Color {
+    /// Parses `#RRGGBB` or `#RRGGBBAA`.
+    init(hex: String) {
+        self.init(uiColor: UIColor(hex: hex))
+    }
 }
+
+extension UIColor {
+    /// Parses `#RRGGBB` or `#RRGGBBAA` (alpha last). Falls back to black on
+    /// malformed input rather than throwing — color helpers shouldn't crash.
+    convenience init(hex: String) {
+        let trimmed = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var value: UInt64 = 0
+        Scanner(string: trimmed).scanHexInt64(&value)
+
+        let r, g, b, a: CGFloat
+        switch trimmed.count {
+        case 6:
+            a = 1
+            r = CGFloat((value >> 16) & 0xFF) / 255
+            g = CGFloat((value >> 8) & 0xFF) / 255
+            b = CGFloat(value & 0xFF) / 255
+        case 8:
+            a = CGFloat((value >> 24) & 0xFF) / 255
+            r = CGFloat((value >> 16) & 0xFF) / 255
+            g = CGFloat((value >> 8) & 0xFF) / 255
+            b = CGFloat(value & 0xFF) / 255
+        default:
+            r = 0; g = 0; b = 0; a = 1
+        }
+
+        self.init(red: r, green: g, blue: b, alpha: a)
+    }
+}
+
+// MARK: - Typography
+//
+// Semantic text styles instead of fixed point sizes so the app respects the
+// user's Dynamic Type setting (Apple HIG: Typography). Sizes still match the
+// previous design at default Dynamic Type, but they now scale up/down with
+// Settings → Display & Brightness → Text Size.
 
 struct ConnectInLargeTitleStyle: ViewModifier {
     func body(content: Content) -> some View {
-        content.font(.system(size: FontSize.largeTitle, weight: .bold, design: .default))
+        content.font(.system(.largeTitle, design: .default, weight: .bold))
     }
 }
 
 struct ConnectInTitleStyle: ViewModifier {
     func body(content: Content) -> some View {
-        content.font(.system(size: FontSize.title, weight: .bold, design: .default))
+        content.font(.system(.title, design: .default, weight: .bold))
     }
 }
 
 struct ConnectInHeadlineStyle: ViewModifier {
     func body(content: Content) -> some View {
-        content.font(.system(size: FontSize.headline, weight: .semibold, design: .default))
+        content.font(.system(.headline, design: .default, weight: .semibold))
     }
 }
 
 struct ConnectInBodyStyle: ViewModifier {
     func body(content: Content) -> some View {
-        content.font(.system(size: FontSize.body, weight: .regular, design: .default))
+        content.font(.system(.body, design: .default, weight: .regular))
     }
 }
 
 struct ConnectInCaptionStyle: ViewModifier {
     func body(content: Content) -> some View {
-        content.font(.system(size: FontSize.caption, weight: .regular, design: .default))
+        content.font(.system(.caption, design: .default, weight: .regular))
     }
 }
 

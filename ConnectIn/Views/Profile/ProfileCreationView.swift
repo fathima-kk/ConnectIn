@@ -244,6 +244,8 @@ struct ProfileCreationView: View {
                                 .foregroundStyle(AppTheme.Colors.textSecondary)
                         }
                         .buttonStyle(.plain)
+                        .accessibilityLabel("More info about first-generation student")
+                        .accessibilityHint("Shows a description of what first-generation means")
                     }
                 }
                 .tint(AppTheme.Colors.accent)

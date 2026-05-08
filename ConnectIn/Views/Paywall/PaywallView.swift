@@ -70,6 +70,7 @@ struct PaywallView: View {
                             .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(AppTheme.Colors.textSecondary)
                     }
+                    .accessibilityLabel("Close")
                 }
             }
             .safeAreaInset(edge: .bottom) {

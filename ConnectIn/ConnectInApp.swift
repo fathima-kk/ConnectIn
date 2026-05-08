@@ -19,6 +19,10 @@ struct ConnectInApp: App {
                 .environmentObject(appState)
                 .environmentObject(connectionsManager)
                 .environmentObject(sessionsManager)
+                // HIG: support Dynamic Type, but cap before the largest
+                // accessibility sizes so dense card layouts (mentor cards,
+                // session tiles) stay readable instead of blowing out.
+                .dynamicTypeSize(...DynamicTypeSize.xxxLarge)
         }
     }
 }

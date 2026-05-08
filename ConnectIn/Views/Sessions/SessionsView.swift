@@ -51,9 +51,13 @@ struct SessionsView: View {
                         }
                     }
                 }
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
             }
             .sheet(item: $schedulingTemplate) { template in
                 ScheduleSessionSheet(template: template)
+                    .presentationDetents([.large])
+                    .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showingPaywall) {
                 PaywallView()
