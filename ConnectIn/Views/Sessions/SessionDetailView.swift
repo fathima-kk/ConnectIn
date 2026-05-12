@@ -7,6 +7,7 @@ import SwiftUI
 
 struct SessionDetailView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var sessionsManager: SessionsManager
 
     let session: Session
@@ -22,6 +23,28 @@ struct SessionDetailView: View {
         sessionsManager.sessions.first { $0.id == session.id } ?? session
     }
 
+    /// True when the signed-in mentor is the host for this session row.
+    private var isMentorHost: Bool {
+        guard appState.isMentor,
+              let userId = appState.currentUser?.id,
+              let selfMentor = SampleData.mentors.first(where: { $0.user.id == userId }) else {
+            return false
+        }
+        return selfMentor.id == session.mentorId
+    }
+
+    private var counterpartyMenteeName: String {
+        if let selfMentor = mentorProfileForLoggedInUser(), liveSession.mentorId == selfMentor.id {
+            return SampleData.mentee.fullName
+        }
+        return SampleData.demoActiveMentees.first?.name ?? "Your mentee"
+    }
+
+    private func mentorProfileForLoggedInUser() -> Mentor? {
+        guard let userId = appState.currentUser?.id else { return nil }
+        return SampleData.mentors.first { $0.user.id == userId }
+    }
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -35,7 +58,7 @@ struct SessionDetailView: View {
             .padding(20)
         }
         .background(AppTheme.Colors.background.ignoresSafeArea())
-        .navigationTitle("Session")
+        .navigationTitle(isMentorHost ? "Mentoring session" : "Session")
         .navigationBarTitleDisplayMode(.inline)
         .onAppear { notes = liveSession.notes }
         .sensoryFeedback(.success, trigger: didComplete)
@@ -50,7 +73,11 @@ struct SessionDetailView: View {
             Text(liveSession.title)
                 .connectInTitle()
                 .foregroundStyle(AppTheme.Colors.textPrimary)
-            if let mentor {
+            if isMentorHost {
+                Text("Hosting \(counterpartyMenteeName) • \(liveSession.duration) min")
+                    .connectInBody()
+                    .foregroundStyle(AppTheme.Colors.textSecondary)
+            } else if let mentor {
                 Text("with \(mentor.user.fullName) • \(mentor.jobTitle) @ \(mentor.company)")
                     .connectInBody()
                     .foregroundStyle(AppTheme.Colors.textSecondary)
@@ -79,14 +106,17 @@ struct SessionDetailView: View {
         VStack(alignment: .leading, spacing: 10) {
             row(icon: "calendar", text: formattedDate(liveSession.date))
             row(icon: "clock", text: "\(liveSession.duration) minutes")
-            row(icon: "video", text: "Video call")
+            row(icon: "video", text: isMentorHost ? "Video room (you lead)" : "Video call")
         }
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(AppTheme.Colors.cardBackground, in: RoundedRectangle(cornerRadius: 14))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
-                .stroke(AppTheme.Colors.cardBorder, lineWidth: 1)
+                .stroke(
+                    isMentorHost ? AppTheme.Colors.secondary.opacity(0.35) : AppTheme.Colors.cardBorder,
+                    lineWidth: 1
+                )
         )
     }
 
@@ -106,7 +136,7 @@ struct SessionDetailView: View {
     private var agendaSection: some View {
         if !liveSession.agenda.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Agenda")
+                Text(isMentorHost ? "Your run-of-show" : "Agenda")
                     .connectInHeadline()
                     .foregroundStyle(AppTheme.Colors.textPrimary)
                 ForEach(Array(liveSession.agenda.enumerated()), id: \.offset) { idx, item in
@@ -126,7 +156,10 @@ struct SessionDetailView: View {
             .background(AppTheme.Colors.cardBackground, in: RoundedRectangle(cornerRadius: 14))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .stroke(AppTheme.Colors.cardBorder, lineWidth: 1)
+                    .stroke(
+                        isMentorHost ? AppTheme.Colors.secondary.opacity(0.3) : AppTheme.Colors.cardBorder,
+                        lineWidth: 1
+                    )
             )
         }
     }
@@ -135,14 +168,14 @@ struct SessionDetailView: View {
     private var goalsSection: some View {
         if !liveSession.goals.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Shared goals")
+                Text(isMentorHost ? "What they want to move" : "Shared goals")
                     .connectInHeadline()
                     .foregroundStyle(AppTheme.Colors.textPrimary)
                 ForEach(liveSession.goals, id: \.self) { goal in
                     HStack(alignment: .top, spacing: 10) {
-                        Image(systemName: "target")
+                        Image(systemName: isMentorHost ? "leaf.fill" : "target")
                             .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(AppTheme.Colors.accent)
+                            .foregroundStyle(isMentorHost ? AppTheme.Colors.success : AppTheme.Colors.accent)
                         Text(goal)
                             .connectInBody()
                             .foregroundStyle(AppTheme.Colors.textPrimary)
@@ -154,14 +187,17 @@ struct SessionDetailView: View {
             .background(AppTheme.Colors.cardBackground, in: RoundedRectangle(cornerRadius: 14))
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .stroke(AppTheme.Colors.cardBorder, lineWidth: 1)
+                    .stroke(
+                        isMentorHost ? AppTheme.Colors.secondary.opacity(0.22) : AppTheme.Colors.cardBorder,
+                        lineWidth: 1
+                    )
             )
         }
     }
 
     private var notesSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Notes")
+            Text(isMentorHost ? "Session wrap-up" : "Notes")
                 .connectInHeadline()
                 .foregroundStyle(AppTheme.Colors.textPrimary)
             TextEditor(text: $notes)
@@ -182,14 +218,17 @@ struct SessionDetailView: View {
     private var actionButtons: some View {
         if liveSession.status == .scheduled {
             VStack(spacing: 10) {
-                PrimaryButton(title: "Mark as Completed", style: .primary) {
+                PrimaryButton(
+                    title: isMentorHost ? "Wrap up session" : "Mark as Completed",
+                    style: .primary
+                ) {
                     sessionsManager.complete(liveSession, notes: notes)
                     didComplete = true
                 }
                 Button {
                     sessionsManager.cancel(liveSession)
                 } label: {
-                    Text("Cancel session")
+                    Text(isMentorHost ? "Cancel this session" : "Cancel session")
                         .connectInBody()
                         .fontWeight(.semibold)
                         .foregroundStyle(AppTheme.Colors.error)
@@ -212,6 +251,7 @@ struct SessionDetailView: View {
 #Preview {
     NavigationStack {
         SessionDetailView(session: SampleData.seedSessions[0])
+            .environmentObject(AppState())
             .environmentObject(SessionsManager())
     }
 }

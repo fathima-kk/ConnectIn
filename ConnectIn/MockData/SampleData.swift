@@ -439,6 +439,46 @@ enum SampleData {
             lastNote: "Resume revamped — applying this week."
         )
     ]
+
+    // MARK: - Mentor impact tab (reviews & motivation)
+
+    /// Private feedback snippets mentees left after sessions—powers the mentor
+    /// “Impact” tab so the second tab feels rewarding, not empty.
+    static let mentorReviewHighlights: [MentorReviewHighlight] = [
+        MentorReviewHighlight(
+            id: UUID(uuidString: "70000000-0000-4000-8000-000000000001")!,
+            menteeGivenName: "Sofia",
+            stars: 5,
+            quote: """
+            You made PM feel reachable—not abstract. I walked away with a real plan \
+            for the next two weeks instead of more tabs open in my browser.
+            """,
+            daysAgo: 4,
+            context: "After goal check-in"
+        ),
+        MentorReviewHighlight(
+            id: UUID(uuidString: "70000000-0000-4000-8000-000000000002")!,
+            menteeGivenName: "Maya",
+            stars: 5,
+            quote: """
+            Brutally kind feedback on my resume. I finally understood *why* hiring \
+            managers skim past bullet #3—and how to fix it.
+            """,
+            daysAgo: 11,
+            context: "After resume review"
+        ),
+        MentorReviewHighlight(
+            id: UUID(uuidString: "70000000-0000-4000-8000-000000000003")!,
+            menteeGivenName: "Alex",
+            stars: 4,
+            quote: """
+            Clear frameworks for outreach and follow-ups. I sent three messages the \
+            same day and got one reply already.
+            """,
+            daysAgo: 18,
+            context: "After networking session"
+        ),
+    ]
 }
 
 // MARK: - Demo data types
@@ -462,4 +502,14 @@ struct DemoActiveMentee: Identifiable, Hashable {
     let connectedSinceDaysAgo: Int
     let sessionsHeld: Int
     let lastNote: String
+}
+
+/// A short mentee-written review shown on the mentor Impact tab.
+struct MentorReviewHighlight: Identifiable, Hashable {
+    let id: UUID
+    let menteeGivenName: String
+    let stars: Int
+    let quote: String
+    let daysAgo: Int
+    let context: String
 }

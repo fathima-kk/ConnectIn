@@ -10,7 +10,6 @@ import SwiftUI
 /// progress so both sides can see impact over time.
 struct SessionsView: View {
     @EnvironmentObject private var appState: AppState
-    @EnvironmentObject private var connectionsManager: ConnectionsManager
     @EnvironmentObject private var sessionsManager: SessionsManager
 
     @State private var path = NavigationPath()
@@ -33,7 +32,7 @@ struct SessionsView: View {
                 .padding(.bottom, 40)
             }
             .background(AppTheme.Colors.background.ignoresSafeArea())
-            .navigationTitle("Sessions")
+            .navigationTitle(appState.isMentor ? "Mentoring" : "Sessions")
             .navigationBarTitleDisplayMode(.large)
             .navigationDestination(for: Session.self) { session in
                 SessionDetailView(session: session)
@@ -69,26 +68,53 @@ struct SessionsView: View {
 
     // MARK: - Header
 
+    @ViewBuilder
     private var header: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Structured mentorship")
-                .connectInCaption()
-                .foregroundStyle(AppTheme.Colors.secondary)
-                .fontWeight(.semibold)
-            Text("Show up prepared")
-                .connectInTitle()
-                .foregroundStyle(AppTheme.Colors.textPrimary)
-            Text("Templates set the agenda. Goals keep you moving. Both sides can see the impact.")
-                .connectInBody()
-                .foregroundStyle(AppTheme.Colors.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+        if appState.isMentor {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Your mentoring calendar")
+                    .connectInCaption()
+                    .foregroundStyle(AppTheme.Colors.secondary)
+                    .fontWeight(.semibold)
+                Text("Host with clarity")
+                    .connectInTitle()
+                    .foregroundStyle(AppTheme.Colors.textPrimary)
+                Text("Plan agendas for your mentees, keep time boundaries, and wrap sessions with notes they can act on.")
+                    .connectInBody()
+                    .foregroundStyle(AppTheme.Colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, 4)
+        } else {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Structured mentorship")
+                    .connectInCaption()
+                    .foregroundStyle(AppTheme.Colors.secondary)
+                    .fontWeight(.semibold)
+                Text("Show up prepared")
+                    .connectInTitle()
+                    .foregroundStyle(AppTheme.Colors.textPrimary)
+                Text("Templates set the agenda. Goals keep you moving. Both sides can see the impact.")
+                    .connectInBody()
+                    .foregroundStyle(AppTheme.Colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, 4)
         }
-        .padding(.top, 4)
     }
 
     // MARK: - Progress dashboard card
 
+    @ViewBuilder
     private var progressCard: some View {
+        if appState.isMentor {
+            mentorProgressCard
+        } else {
+            menteeProgressCard
+        }
+    }
+
+    private var menteeProgressCard: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack {
                 Label("Your impact", systemImage: "chart.line.uptrend.xyaxis")
@@ -100,17 +126,17 @@ struct SessionsView: View {
             }
 
             HStack(spacing: 12) {
-                statTile(
+                statTileOnGradient(
                     title: "Sessions",
                     value: "\(sessionsManager.completedSessionCount)",
                     icon: "video.fill"
                 )
-                statTile(
+                statTileOnGradient(
                     title: "Minutes",
                     value: "\(sessionsManager.totalMinutesMentored)",
                     icon: "clock.fill"
                 )
-                statTile(
+                statTileOnGradient(
                     title: "Milestones",
                     value: "\(sessionsManager.milestoneCount)",
                     icon: "flag.checkered"
@@ -131,6 +157,85 @@ struct SessionsView: View {
         .overlay(
             RoundedRectangle(cornerRadius: 18)
                 .stroke(AppTheme.Colors.accent.opacity(0.4), lineWidth: 1)
+        )
+    }
+
+    /// Light, editorial card so the Sessions tab reads as “hosting,” not the
+    /// same gradient impact tile mentees see.
+    private var mentorProgressCard: some View {
+        HStack(alignment: .top, spacing: 0) {
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [AppTheme.Colors.secondary, AppTheme.Colors.accent],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(width: 5)
+
+            VStack(alignment: .leading, spacing: 14) {
+                HStack(alignment: .center) {
+                    Label("Hosting footprint", systemImage: "person.2.fill")
+                        .connectInCaption()
+                        .fontWeight(.semibold)
+                        .foregroundStyle(AppTheme.Colors.secondary)
+                    Spacer()
+                    membershipPill
+                }
+
+                HStack(spacing: 10) {
+                    mentorStatTile(
+                        title: "Hosted",
+                        value: "\(sessionsManager.completedSessionCount)",
+                        icon: "video.fill"
+                    )
+                    mentorStatTile(
+                        title: "Minutes out",
+                        value: "\(sessionsManager.totalMinutesMentored)",
+                        icon: "clock.fill"
+                    )
+                    mentorStatTile(
+                        title: "Their wins",
+                        value: "\(sessionsManager.milestoneCount)",
+                        icon: "flag.checkered"
+                    )
+                }
+            }
+            .padding(.leading, 14)
+            .padding([.trailing, .vertical], 14)
+        }
+        .background(AppTheme.Colors.cardBackground, in: RoundedRectangle(cornerRadius: 18))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(AppTheme.Colors.cardBorder, lineWidth: 1)
+        )
+    }
+
+    private func mentorStatTile(title: String, value: String, icon: String) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(AppTheme.Colors.secondary)
+            Text(value)
+                .font(.system(size: 20, weight: .bold))
+                .foregroundStyle(AppTheme.Colors.textPrimary)
+            Text(title)
+                .connectInCaption()
+                .foregroundStyle(AppTheme.Colors.textSecondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+                .minimumScaleFactor(0.85)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(AppTheme.Colors.background.opacity(0.9))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(AppTheme.Colors.divider, lineWidth: 1)
         )
     }
 
@@ -186,7 +291,7 @@ struct SessionsView: View {
         }
     }
 
-    private func statTile(title: String, value: String, icon: String) -> some View {
+    private func statTileOnGradient(title: String, value: String, icon: String) -> some View {
         VStack(spacing: 6) {
             Image(systemName: icon)
                 .font(.system(size: 14, weight: .semibold))
@@ -210,69 +315,133 @@ struct SessionsView: View {
 
     @ViewBuilder
     private var nextSessionCard: some View {
-        if let next = sessionsManager.nextSession,
-           let mentor = mentor(for: next) {
-            Button {
-                path.append(next)
-            } label: {
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack {
-                        Label("Up Next", systemImage: "calendar")
-                            .connectInCaption()
-                            .fontWeight(.semibold)
-                            .foregroundStyle(AppTheme.Colors.secondary)
-                        Spacer()
-                        Text(relativeDate(next.date))
-                            .connectInCaption()
-                            .foregroundStyle(AppTheme.Colors.textSecondary)
-                    }
-                    Text(next.title)
-                        .connectInHeadline()
-                        .foregroundStyle(AppTheme.Colors.textPrimary)
-                    Text("with \(mentor.user.fullName) • \(next.duration) min")
-                        .connectInBody()
-                        .foregroundStyle(AppTheme.Colors.textSecondary)
-                    if let firstGoal = next.goals.first {
-                        HStack(spacing: 6) {
-                            Image(systemName: "target")
-                                .font(.system(size: 11))
-                                .foregroundStyle(AppTheme.Colors.accent)
-                            Text(firstGoal)
-                                .connectInCaption()
-                                .foregroundStyle(AppTheme.Colors.textPrimary)
-                        }
-                    }
-                }
-                .padding(16)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(AppTheme.Colors.cardBackground, in: RoundedRectangle(cornerRadius: 16))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 16)
-                        .stroke(AppTheme.Colors.cardBorder, lineWidth: 1)
-                )
+        if let next = sessionsManager.nextSession {
+            if appState.isMentor {
+                mentorNextSessionCard(next)
+            } else if let mentor = mentor(for: next) {
+                menteeNextSessionCard(next, mentor: mentor)
+            } else {
+                emptyNextSessionCard(mentorFlow: false)
             }
-            .buttonStyle(.plain)
         } else {
-            VStack(spacing: 10) {
-                Image(systemName: "calendar.badge.plus")
-                    .font(.system(size: 32))
-                    .foregroundStyle(AppTheme.Colors.secondary)
-                Text("No sessions scheduled")
+            emptyNextSessionCard(mentorFlow: appState.isMentor)
+        }
+    }
+
+    private func menteeNextSessionCard(_ next: Session, mentor: Mentor) -> some View {
+        Button {
+            path.append(next)
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Label("Up Next", systemImage: "calendar")
+                        .connectInCaption()
+                        .fontWeight(.semibold)
+                        .foregroundStyle(AppTheme.Colors.secondary)
+                    Spacer()
+                    Text(relativeDate(next.date))
+                        .connectInCaption()
+                        .foregroundStyle(AppTheme.Colors.textSecondary)
+                }
+                Text(next.title)
                     .connectInHeadline()
                     .foregroundStyle(AppTheme.Colors.textPrimary)
-                Text("Pick a template below to set a clear agenda before your next call.")
+                Text("with \(mentor.user.fullName) • \(next.duration) min")
                     .connectInBody()
                     .foregroundStyle(AppTheme.Colors.textSecondary)
-                    .multilineTextAlignment(.center)
+                if let firstGoal = next.goals.first {
+                    HStack(spacing: 6) {
+                        Image(systemName: "target")
+                            .font(.system(size: 11))
+                            .foregroundStyle(AppTheme.Colors.accent)
+                        Text(firstGoal)
+                            .connectInCaption()
+                            .foregroundStyle(AppTheme.Colors.textPrimary)
+                    }
+                }
             }
-            .frame(maxWidth: .infinity)
-            .padding(20)
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .background(AppTheme.Colors.cardBackground, in: RoundedRectangle(cornerRadius: 16))
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
                     .stroke(AppTheme.Colors.cardBorder, lineWidth: 1)
             )
         }
+        .buttonStyle(.plain)
+    }
+
+    private func mentorNextSessionCard(_ next: Session) -> some View {
+        Button {
+            path.append(next)
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack {
+                    Label("Next session", systemImage: "mic.fill")
+                        .connectInCaption()
+                        .fontWeight(.semibold)
+                        .foregroundStyle(AppTheme.Colors.secondary)
+                    Spacer()
+                    Text(relativeDate(next.date))
+                        .connectInCaption()
+                        .foregroundStyle(AppTheme.Colors.textSecondary)
+                }
+                Text(next.title)
+                    .connectInHeadline()
+                    .foregroundStyle(AppTheme.Colors.textPrimary)
+                Text("with \(counterpartyMenteeName(for: next)) • \(next.duration) min")
+                    .connectInBody()
+                    .foregroundStyle(AppTheme.Colors.textSecondary)
+                if let firstGoal = next.goals.first {
+                    HStack(spacing: 6) {
+                        Image(systemName: "leaf.fill")
+                            .font(.system(size: 11))
+                            .foregroundStyle(AppTheme.Colors.success)
+                        Text("Focus: \(firstGoal)")
+                            .connectInCaption()
+                            .foregroundStyle(AppTheme.Colors.textPrimary)
+                    }
+                }
+            }
+            .padding(16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(AppTheme.Colors.cardBackground, in: RoundedRectangle(cornerRadius: 16))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(AppTheme.Colors.secondary.opacity(0.35), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func emptyNextSessionCard(mentorFlow: Bool) -> some View {
+        VStack(spacing: 10) {
+            Image(systemName: mentorFlow ? "calendar.badge.clock" : "calendar.badge.plus")
+                .font(.system(size: 32))
+                .foregroundStyle(AppTheme.Colors.secondary)
+            Text("Nothing on the calendar")
+                .connectInHeadline()
+                .foregroundStyle(AppTheme.Colors.textPrimary)
+            Text(
+                mentorFlow
+                    ? "When a mentee is ready, start from an agenda template so the call stays focused and energizing."
+                    : "Pick a template below to set a clear agenda before your next call."
+            )
+            .connectInBody()
+            .foregroundStyle(AppTheme.Colors.textSecondary)
+            .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(20)
+        .background(AppTheme.Colors.cardBackground, in: RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(
+                    mentorFlow ? AppTheme.Colors.secondary.opacity(0.25) : AppTheme.Colors.cardBorder,
+                    lineWidth: 1
+                )
+        )
     }
 
     // MARK: - Templates
@@ -280,9 +449,16 @@ struct SessionsView: View {
     private var templatesShortlist: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
-                Text("Session templates")
-                    .connectInHeadline()
-                    .foregroundStyle(AppTheme.Colors.textPrimary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(appState.isMentor ? "Agenda starters" : "Session templates")
+                        .connectInHeadline()
+                        .foregroundStyle(AppTheme.Colors.textPrimary)
+                    if appState.isMentor {
+                        Text("Reusable flows so mentees never wonder what “good” looks like.")
+                            .connectInCaption()
+                            .foregroundStyle(AppTheme.Colors.textSecondary)
+                    }
+                }
                 Spacer()
                 Button {
                     browseTemplates = true
@@ -318,7 +494,11 @@ struct SessionsView: View {
         VStack(alignment: .leading, spacing: 8) {
             ZStack {
                 Circle()
-                    .fill(AppTheme.Colors.accent.opacity(0.18))
+                    .fill(
+                        appState.isMentor
+                            ? AppTheme.Colors.secondary.opacity(0.2)
+                            : AppTheme.Colors.accent.opacity(0.18)
+                    )
                     .frame(width: 38, height: 38)
                 Image(systemName: template.icon)
                     .font(.system(size: 16, weight: .semibold))
@@ -337,7 +517,10 @@ struct SessionsView: View {
         .background(AppTheme.Colors.cardBackground, in: RoundedRectangle(cornerRadius: 14))
         .overlay(
             RoundedRectangle(cornerRadius: 14)
-                .stroke(AppTheme.Colors.cardBorder, lineWidth: 1)
+                .stroke(
+                    appState.isMentor ? AppTheme.Colors.secondary.opacity(0.35) : AppTheme.Colors.cardBorder,
+                    lineWidth: 1
+                )
         )
     }
 
@@ -347,7 +530,7 @@ struct SessionsView: View {
     private var pastSessionsSection: some View {
         if !sessionsManager.pastSessions.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
-                Text("Past sessions")
+                Text(appState.isMentor ? "Sessions you hosted" : "Past sessions")
                     .connectInHeadline()
                     .foregroundStyle(AppTheme.Colors.textPrimary)
                 ForEach(sessionsManager.pastSessions) { session in
@@ -364,12 +547,22 @@ struct SessionsView: View {
 
     private func pastSessionRow(_ session: Session) -> some View {
         let mentor = mentor(for: session)
+        let subtitle: String = {
+            if appState.isMentor {
+                return "\(counterpartyMenteeName(for: session)) • \(formattedDate(session.date))"
+            }
+            return "\(mentor?.user.fullName ?? "Mentor") • \(formattedDate(session.date))"
+        }()
         return HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(AppTheme.Colors.accent.opacity(0.18))
+                    .fill(
+                        appState.isMentor
+                            ? AppTheme.Colors.secondary.opacity(0.2)
+                            : AppTheme.Colors.accent.opacity(0.18)
+                    )
                     .frame(width: 38, height: 38)
-                Image(systemName: "checkmark")
+                Image(systemName: appState.isMentor ? "person.fill.checkmark" : "checkmark")
                     .font(.system(size: 14, weight: .bold))
                     .foregroundStyle(AppTheme.Colors.secondary)
             }
@@ -378,7 +571,7 @@ struct SessionsView: View {
                     .connectInBody()
                     .fontWeight(.semibold)
                     .foregroundStyle(AppTheme.Colors.textPrimary)
-                Text("\(mentor?.user.fullName ?? "Mentor") • \(formattedDate(session.date))")
+                Text(subtitle)
                     .connectInCaption()
                     .foregroundStyle(AppTheme.Colors.textSecondary)
             }
@@ -402,11 +595,20 @@ struct SessionsView: View {
         if !sessionsManager.milestones.isEmpty {
             VStack(alignment: .leading, spacing: 10) {
                 HStack {
-                    Text("Milestones")
+                    Text(appState.isMentor ? "Their wins" : "Milestones")
                         .connectInHeadline()
                         .foregroundStyle(AppTheme.Colors.textPrimary)
                     Spacer()
-                    Text("\(sessionsManager.milestoneCount) unlocked")
+                    Text(
+                        appState.isMentor
+                            ? "\(sessionsManager.milestoneCount) unlocked with you"
+                            : "\(sessionsManager.milestoneCount) unlocked"
+                    )
+                    .connectInCaption()
+                    .foregroundStyle(AppTheme.Colors.textSecondary)
+                }
+                if appState.isMentor {
+                    Text("Progress mentees hit while you’re in their corner—worth a quick celebrate.")
                         .connectInCaption()
                         .foregroundStyle(AppTheme.Colors.textSecondary)
                 }
@@ -421,11 +623,15 @@ struct SessionsView: View {
         HStack(spacing: 12) {
             ZStack {
                 RoundedRectangle(cornerRadius: 10)
-                    .fill(AppTheme.Colors.accent.opacity(0.20))
+                    .fill(
+                        appState.isMentor
+                            ? AppTheme.Colors.secondary.opacity(0.22)
+                            : AppTheme.Colors.accent.opacity(0.20)
+                    )
                     .frame(width: 38, height: 38)
                 Image(systemName: milestone.category.icon)
                     .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(AppTheme.Colors.primary)
+                    .foregroundStyle(appState.isMentor ? AppTheme.Colors.secondary : AppTheme.Colors.primary)
             }
             VStack(alignment: .leading, spacing: 2) {
                 Text(milestone.title)
@@ -457,6 +663,20 @@ struct SessionsView: View {
         SampleData.mentors.first { $0.id == session.mentorId }
     }
 
+    /// Logged-in user’s row in the mentor catalog (demo uses catalog `User.id`).
+    private func mentorProfileForLoggedInUser() -> Mentor? {
+        guard let userId = appState.currentUser?.id else { return nil }
+        return SampleData.mentors.first { $0.user.id == userId }
+    }
+
+    /// Sessions don’t yet store mentee IDs; demo narrative pairs seed sessions with Sofia.
+    private func counterpartyMenteeName(for session: Session) -> String {
+        if let selfMentor = mentorProfileForLoggedInUser(), session.mentorId == selfMentor.id {
+            return SampleData.mentee.fullName
+        }
+        return SampleData.demoActiveMentees.first?.name ?? "Your mentee"
+    }
+
     private func relativeDate(_ date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .full
@@ -473,6 +693,5 @@ struct SessionsView: View {
 #Preview {
     SessionsView()
         .environmentObject(AppState())
-        .environmentObject(ConnectionsManager())
         .environmentObject(SessionsManager())
 }

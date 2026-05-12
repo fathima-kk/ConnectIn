@@ -18,6 +18,15 @@ struct ContentView: View {
         appState.isMentor ? 0 : connectionsManager.pendingCount
     }
 
+    /// Mentors see impact & reviews; mentees get Browse + mentor search.
+    private var browseTabTitle: String {
+        appState.isMentor ? "Impact" : "Browse"
+    }
+
+    private var browseTabSystemImage: String {
+        appState.isMentor ? "star.fill" : "magnifyingglass"
+    }
+
     var body: some View {
         TabView(selection: $appState.selectedTab) {
             Tab("Home", systemImage: "house.fill", value: MainTab.dashboard) {
@@ -29,12 +38,18 @@ struct ContentView: View {
                 }
             }
 
-            Tab("Browse", systemImage: "magnifyingglass", value: MainTab.browse) {
+            Tab(browseTabTitle, systemImage: browseTabSystemImage, value: MainTab.browse) {
                 NavigationStack {
-                    BrowseMentorsView()
-                        .navigationDestination(for: Mentor.self) { mentor in
-                            MentorDetailView(mentor: mentor)
+                    Group {
+                        if appState.isMentor {
+                            MentorImpactTabView()
+                        } else {
+                            BrowseMentorsView()
+                                .navigationDestination(for: Mentor.self) { mentor in
+                                    MentorDetailView(mentor: mentor)
+                                }
                         }
+                    }
                 }
             }
             .badge(browseBadgeCount)

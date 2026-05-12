@@ -8,6 +8,7 @@ import SwiftUI
 /// Browse the full library of session templates and pick one to schedule.
 struct SessionTemplatePicker: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var appState: AppState
 
     var onPick: (SessionTemplate) -> Void
 
@@ -27,7 +28,7 @@ struct SessionTemplatePicker: View {
                 .padding(20)
             }
             .background(AppTheme.Colors.background.ignoresSafeArea())
-            .navigationTitle("Pick a template")
+            .navigationTitle(appState.isMentor ? "Templates for your calls" : "Pick a template")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -88,4 +89,5 @@ struct SessionTemplatePicker: View {
 
 #Preview {
     SessionTemplatePicker { _ in }
+        .environmentObject(AppState())
 }

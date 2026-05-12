@@ -9,12 +9,14 @@ import SwiftUI
 /// chosen template onto the calendar.
 struct ScheduleSessionSheet: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var connectionsManager: ConnectionsManager
     @EnvironmentObject private var sessionsManager: SessionsManager
 
     let template: SessionTemplate
 
     @State private var selectedMentorID: UUID?
+    @State private var selectedMenteeID: UUID?
     @State private var selectedDate: Date = Calendar.current.date(byAdding: .day, value: 3, to: Date()) ?? Date()
     @State private var didSchedule: Bool = false
 
@@ -25,9 +27,34 @@ struct ScheduleSessionSheet: View {
         return mentors.isEmpty ? SampleData.mentors : mentors
     }
 
+    private var availableMentees: [DemoActiveMentee] {
+        SampleData.demoActiveMentees
+    }
+
+    private var loggedInMentorProfile: Mentor? {
+        guard let userId = appState.currentUser?.id else { return nil }
+        return SampleData.mentors.first { $0.user.id == userId }
+    }
+
     private var selectedMentor: Mentor? {
         guard let id = selectedMentorID else { return availableMentors.first }
         return availableMentors.first { $0.id == id }
+    }
+
+    private var selectedMentee: DemoActiveMentee? {
+        guard let id = selectedMenteeID else { return availableMentees.first }
+        return availableMentees.first { $0.id == id }
+    }
+
+    private var canSchedule: Bool {
+        if appState.isMentor {
+            return hostingMentorForSchedule != nil && (selectedMentee != nil || !availableMentees.isEmpty)
+        }
+        return selectedMentor != nil
+    }
+
+    private var hostingMentorForSchedule: Mentor? {
+        loggedInMentorProfile ?? SampleData.mentors.first
     }
 
     var body: some View {
@@ -35,14 +62,18 @@ struct ScheduleSessionSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     summaryCard
-                    mentorPicker
+                    if appState.isMentor {
+                        menteePicker
+                    } else {
+                        mentorPicker
+                    }
                     datePicker
                     agendaPreview
                 }
                 .padding(20)
             }
             .background(AppTheme.Colors.background.ignoresSafeArea())
-            .navigationTitle("Schedule session")
+            .navigationTitle(appState.isMentor ? "Host a session" : "Schedule session")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -53,11 +84,15 @@ struct ScheduleSessionSheet: View {
                     Button("Schedule") { schedule() }
                         .fontWeight(.semibold)
                         .foregroundStyle(AppTheme.Colors.secondary)
-                        .disabled(selectedMentor == nil)
+                        .disabled(!canSchedule)
                 }
             }
             .onAppear {
-                if selectedMentorID == nil {
+                if appState.isMentor {
+                    if selectedMenteeID == nil {
+                        selectedMenteeID = availableMentees.first?.id
+                    }
+                } else if selectedMentorID == nil {
                     selectedMentorID = availableMentors.first?.id
                 }
             }
@@ -157,7 +192,7 @@ struct ScheduleSessionSheet: View {
 
     private var datePicker: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("When?")
+            Text(appState.isMentor ? "When are you hosting?" : "When?")
                 .connectInBody()
                 .fontWeight(.semibold)
                 .foregroundStyle(AppTheme.Colors.textPrimary)
@@ -178,9 +213,73 @@ struct ScheduleSessionSheet: View {
         }
     }
 
+    private var menteePicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Which mentee?")
+                .connectInBody()
+                .fontWeight(.semibold)
+                .foregroundStyle(AppTheme.Colors.textPrimary)
+
+            if availableMentees.isEmpty {
+                Text("When you accept mentee requests on Home, they’ll appear here so you can book focused time.")
+                    .connectInBody()
+                    .foregroundStyle(AppTheme.Colors.textSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else {
+                VStack(spacing: 8) {
+                    ForEach(availableMentees) { mentee in
+                        Button {
+                            selectedMenteeID = mentee.id
+                        } label: {
+                            HStack(spacing: 12) {
+                                Circle()
+                                    .fill(AppTheme.Colors.secondary.opacity(0.22))
+                                    .frame(width: 38, height: 38)
+                                    .overlay(
+                                        Text(initials(mentee.name))
+                                            .font(.system(size: 13, weight: .bold))
+                                            .foregroundStyle(AppTheme.Colors.secondary)
+                                    )
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(mentee.name)
+                                        .connectInBody()
+                                        .fontWeight(.semibold)
+                                        .foregroundStyle(AppTheme.Colors.textPrimary)
+                                    Text(mentee.affiliation)
+                                        .connectInCaption()
+                                        .foregroundStyle(AppTheme.Colors.textSecondary)
+                                }
+                                Spacer()
+                                if selectedMenteeID == mentee.id {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundStyle(AppTheme.Colors.secondary)
+                                }
+                            }
+                            .padding(12)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .fill(selectedMenteeID == mentee.id
+                                          ? AppTheme.Colors.secondary.opacity(0.12)
+                                          : AppTheme.Colors.cardBackground)
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(selectedMenteeID == mentee.id
+                                            ? AppTheme.Colors.secondary
+                                            : AppTheme.Colors.cardBorder,
+                                            lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+
     private var agendaPreview: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Agenda preview")
+            Text(appState.isMentor ? "Agenda you’ll drive" : "Agenda preview")
                 .connectInBody()
                 .fontWeight(.semibold)
                 .foregroundStyle(AppTheme.Colors.textPrimary)
@@ -206,8 +305,13 @@ struct ScheduleSessionSheet: View {
     }
 
     private func schedule() {
-        guard let mentor = selectedMentor else { return }
-        sessionsManager.schedule(template: template, with: mentor, on: selectedDate)
+        if appState.isMentor {
+            guard let hostingMentor = hostingMentorForSchedule else { return }
+            sessionsManager.schedule(template: template, with: hostingMentor, on: selectedDate)
+        } else {
+            guard let mentor = selectedMentor else { return }
+            sessionsManager.schedule(template: template, with: mentor, on: selectedDate)
+        }
         didSchedule = true
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) { dismiss() }
     }
@@ -220,6 +324,7 @@ struct ScheduleSessionSheet: View {
 
 #Preview {
     ScheduleSessionSheet(template: SessionTemplate.library[0])
+        .environmentObject(AppState())
         .environmentObject(ConnectionsManager())
-        .environmentObject(SessionsManager())
+        .environmentObject(SessionsManager(persisted: false))
 }
